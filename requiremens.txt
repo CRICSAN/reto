@@ -1,0 +1,5 @@
+# Requirements para mi app Streamlit
+streamlit>=1.28.0
+pandas>=2.0.0
+emoji==2.10.0          # ← Librería NO común (para emojis)
+python-dotenv==1.0.0   # ← Otra librería no común
