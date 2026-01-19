@@ -1,75 +1,67 @@
 import streamlit as st
 import pandas as pd
-import emoji  # ← ¡NO viene por defecto en Streamlit Cloud!
-from datetime import datetime
-import random
+from PIL import Image
 
-# Configuración de página
-st.set_page_config(page_title="App con Librerías Especiales", layout="wide")
+st.title("Dashboard de desempeño")
+st.write("Análisis básico de empleados de Socialize your knowledge. " \
+"Nos permitirá identificar fortalezas y áreas de oportunidad, y así lograr mejorar su rendimiento y obtener mayor calidad en los servicios")
 
-# Título con emoji usando la librería 'emoji'
-st.title(emoji.emojize(":rocket: Mi App con Requirements.txt :chart_increasing:"))
+# Cargar datos
+df = pd.read_csv('Employee_data.csv')
 
-# Subtítulo
-st.subheader("Demostrando que requirements.txt ES necesario")
+# Codigo que permita desplegar el logotipo de la empresa en la aplicación web.
+logo = Image.open("logo.png")
+st.sidebar.image(logo, width=200)
 
-# 1. USANDO EMOJI (librería no común)
-st.write("### 1. Emojis con librería 'emoji'")
+# control para seleccionar el género del empleado
+genero = st.sidebar.radio("Género:", ["Todos", "M", "F"])
+
+# control para seleccionar el puntaje del empleado 
+puntaje = st.sidebar.slider("Puntaje mínimo:", 1, 4, 1)
+
+# control para seleccionar el estado civil del empleado
+estado_civil = st.sidebar.multiselect("Estado civil:", options=["Divorced", "Married", "Single", "Separated", "Widowed"])
+
+# Aplicar filtros
+datos_filtrados = df[df['marital_status'].isin(estado_civil)] 
+
+
+if genero == "Todos":
+    datos_filtrados = df[df['performance_score'] >= puntaje]
+else:
+    datos_filtrados = df[(df['gender'] == genero) & (df['performance_score'] >= puntaje)]
+
+
+if estado_civil:
+    datos_filtrados = datos_filtrados[datos_filtrados['marital_status'].isin(estado_civil)]
+
+
+# Esstadísticas generales
 col1, col2, col3 = st.columns(3)
-with col1:
-    st.write(emoji.emojize(":red_heart: Corazón rojo"))
-with col2:
-    st.write(emoji.emojize(":thumbs_up: Pulgar arriba"))
-with col3:
-    st.write(emoji.emojize(":fire: Fuego"))
+col1.metric("Empleados", len(datos_filtrados)) 
+col2.metric("Puntaje desempeño Promedio", f"{datos_filtrados['performance_score'].mean():.2f}")
+col3.metric("Salario Promedio", f"${datos_filtrados['salary'].mean():,.0f}")
 
-# 2. DATAFRAME con pandas
-st.write("### 2. DataFrame con Pandas")
-data = {
-    'Producto': ['Manzanas', 'Naranjas', 'Plátanos', 'Uvas'],
-    'Cantidad': [150, 200, 80, 120],
-    'Precio': [25.5, 18.3, 12.8, 45.0],
-    'Emoji': [emoji.emojize(":red_apple:"), 
-              emoji.emojize(":tangerine:"), 
-              emoji.emojize(":banana:"), 
-              emoji.emojize(":grapes:")]
-}
-df = pd.DataFrame(data)
-df['Total'] = df['Cantidad'] * df['Precio']
-st.dataframe(df, use_container_width=True)
+# •	Código que permita mostrar un gráfico en donde se visualice la distribución de los puntajes de desempeño.
+st.subheader("Distribución de Puntajes")
+st.bar_chart(datos_filtrados['performance_score'].value_counts()) 
 
-# 3. GRÁFICO simple con Streamlit nativo
-st.write("### 3. Gráfico de barras")
-st.bar_chart(df.set_index('Producto')['Total'])
+# •	Código que permita mostrar un gráfico en donde se visualice el promedio de horas trabajadas por el género del empleado.
+st.subheader("Horas por Género")
+st.bar_chart(datos_filtrados.groupby('gender')['average_work_hours'].mean())
 
-# 4. SIMULACIÓN que requiere random
-st.write("### 4. Números aleatorios con Random")
-if st.button("Generar número aleatorio"):
-    num = random.randint(1, 100)
-    st.success(f"Número generado: {num} {emoji.emojize(':game_die:')}")
 
-# 5. FECHA actual
-st.write("### 5. Fecha y hora actual")
-now = datetime.now()
-st.info(f"Fecha: {now.strftime('%d/%m/%Y')}")
-st.info(f"Hora: {now.strftime('%H:%M:%S')} {emoji.emojize(':alarm_clock:')}")
+# •	Código que permita mostrar un gráfico en donde se visualice la edad de los empleados con respecto al salario de los mismo.
+st.subheader("Relación salario vs edad")
+st.scatter_chart(datos_filtrados, x='age', y='salary')
 
-# 6. EXPLICACIÓN de requirements.txt
-with st.expander("¿Por qué funciona esto?"):
-    st.write("""
-    Esta app FUNCIONA porque `requirements.txt` le dice a Streamlit Cloud:
-    
-    1. **streamlit>=1.28.0** - El framework principal ✅
-    2. **pandas>=2.0.0** - Para DataFrames ✅  
-    3. **emoji==2.10.0** - Para mostrar emojis ✅
-    4. **python-dotenv==1.0.0** - Para variables de entorno ✅
-    
-    **Sin requirements.txt**: Fallaría con `ModuleNotFoundError: No module named 'emoji'`
-    
-    **Con requirements.txt**: Streamlit Cloud instala todo automáticamente ✅
-    """)
 
-# Pie de página
-st.divider()
-st.caption(f"App generada el {now.strftime('%d/%m/%Y %H:%M')} | Requirements.txt funciona correctamente")
+# •	Código que permita mostrar un gráfico en donde se visualice la relación del promedio de horas trabajadas versus el puntaje de desempeño.
+st.subheader("Relación horas promedio trabajadas vs performance")
+st.scatter_chart(datos_filtrados, x='average_work_hours', y='performance_score', color='gender'
+)
 
+
+# Código de conclusiones
+st.subheader("Conclusión")
+st.write(f"El resultado nos indica que en promedio hay 2.98 de puntaje promedio, en una escala de 1 a 5 siendo 5 el máximo, todo en el total de los 311 empleados. Además, las mujeres en promedio trabajaron un poco más que los hombres  y hay una relación directa entre la edad de los trabajadores y el sueldo obtenido. Dato curioso, las personas viudas tuvieron mayor puntaje de desempeño.")
